@@ -12,7 +12,7 @@ export function exportJSON(review: Review): void {
 }
 
 export function exportMarkdown(review: Review, files: ParsedFile[]): string {
-  const { repo = 'N/A', base_ref = 'N/A', head_ref = 'N/A', review_id, created_at, comments } = review;
+  const { comments } = review;
 
   // Group comments by file
   const commentsByFile = new Map<string, typeof comments>();
@@ -22,21 +22,11 @@ export function exportMarkdown(review: Review, files: ParsedFile[]): string {
     commentsByFile.set(comment.file_path, fileComments);
   });
 
-  let markdown = `# ✅ Review Export — vibechecker
-
-**Repository:** \`${repo}\`
-**Base:** \`${base_ref}\`
-**Head:** \`${head_ref}\`
-**Review ID:** \`${review_id}\`
-**Created:** ${created_at}
-**Total Comments:** ${comments.length}
-
----
-`;
+  let markdown = '';
 
   // Generate markdown for each file with comments
   commentsByFile.forEach((fileComments, filePath) => {
-    markdown += `\n## 📄 File: \`${filePath}\`\n\n`;
+    markdown += `## ${filePath}\n\n`;
 
     fileComments.forEach(comment => {
       // Find the corresponding file and hunk
@@ -72,28 +62,16 @@ export function exportMarkdown(review: Review, files: ParsedFile[]): string {
         }
       }
 
-      markdown += `### 🔢 Diff Context\n\`\`\`diff\n${diffContext || '(context not available)'}\n\`\`\`\n\n`;
-      markdown += `### 💬 Comment\n\n${comment.comment}\n\n`;
+      markdown += `\`\`\`diff\n${diffContext || '(context not available)'}\n\`\`\`\n\n`;
+      markdown += `${comment.comment}\n\n`;
 
-      if (comment.tags && comment.tags.length > 0) {
-        markdown += `**Tags:** ${comment.tags.join(', ')}\n`;
+      if (comment.resolved) {
+        markdown += `Status: resolved\n`;
       }
 
-      markdown += `**Status:** ${comment.resolved ? '✅ resolved' : '⬜️ unresolved'}\n\n`;
-      markdown += `---\n\n`;
+      markdown += `\n`;
     });
   });
-
-  // Summary
-  const fileCount = commentsByFile.size;
-  const resolvedCount = comments.filter(c => c.resolved).length;
-
-  markdown += `## 🧠 Summary
-
-- 🧾 **Files reviewed:** ${fileCount}
-- 💬 **Total comments:** ${comments.length}
-- ⚙️ **Resolved:** ${resolvedCount} / ${comments.length}
-`;
 
   return markdown;
 }

@@ -16,6 +16,9 @@ export type Review = {
   repo?: string;
   base_ref?: string;
   head_ref?: string;
+  base_commit?: string;
+  head_commit?: string;
+  has_uncommitted_changes?: boolean;
   created_at: string;
   comments: Comment[];
 }

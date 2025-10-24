@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import type { Review, Comment, ParsedFile } from "../types/model";
 import { parseGitDiff } from './lib/parseDiff';
-import { loadReview, saveReview } from './lib/storage';
 import { exportJSON, exportMarkdown, copyToClipboard } from './lib/export';
-import { fetchCurrentBranchDiff, fetchGitInfo } from './lib/git';
+import { fetchCurrentBranchDiff, fetchGitInfo, fetchBranches, fetchWorktrees, switchWorktree, type Worktree } from './lib/git';
+import { loadWorkspace, saveWorkspace, getWorkspaceId, setCurrentWorkspaceId, type Workspace } from './lib/workspace';
 import FileList from './components/FileList';
 import DiffViewer from './components/DiffViewer';
 import CommentPanel from './components/CommentPanel';
 import DiffInput from './components/DiffInput';
+import BranchSelector from './components/BranchSelector';
+import WorktreeSelector from './components/WorktreeSelector';
 
 function App() {
   const [review, setReview] = useState<Review | null>(null);
@@ -16,38 +18,85 @@ function App() {
   const [showDiffInput, setShowDiffInput] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [isLoadingDiff, setIsLoadingDiff] = useState(false);
+  const [branches, setBranches] = useState<string[]>([]);
+  const [showBaseBranchSelector, setShowBaseBranchSelector] = useState(false);
+  const [showHeadBranchSelector, setShowHeadBranchSelector] = useState(false);
+  const [worktrees, setWorktrees] = useState<Worktree[]>([]);
+  const [currentWorktree, setCurrentWorktree] = useState<Worktree | null>(null);
+  const [showWorktreeSelector, setShowWorktreeSelector] = useState(false);
+  const [currentWorkspace, setCurrentWorkspace] = useState<Workspace | null>(null);
 
-  // Load review from localStorage on mount
+  // Load workspace on mount
   useEffect(() => {
-    const savedReview = loadReview();
-    if (savedReview) {
-      setReview(savedReview);
-    }
+    initializeWorkspace();
   }, []);
 
-  // Auto-load current branch diff on mount
-  useEffect(() => {
+  const initializeWorkspace = async () => {
+    // Load worktrees first
+    const worktreeData = await fetchWorktrees();
+    if (worktreeData) {
+      setWorktrees(worktreeData.worktrees);
+      setCurrentWorktree(worktreeData.current);
+
+      // Load or create workspace for current worktree
+      const workspaceId = getWorkspaceId(worktreeData.current.path);
+      let workspace = loadWorkspace(worktreeData.current.path);
+
+      if (!workspace) {
+        workspace = {
+          id: workspaceId,
+          worktreePath: worktreeData.current.path,
+          branch: worktreeData.current.branch,
+          review: null,
+          lastAccessed: new Date().toISOString(),
+        };
+      }
+
+      setCurrentWorkspace(workspace);
+      if (workspace.review) {
+        setReview(workspace.review);
+      }
+
+      setCurrentWorkspaceId(workspaceId);
+    }
+
+    // Load branches and diff
+    loadBranches();
     loadCurrentBranchDiff();
-  }, []);
+  };
 
-  // Save review to localStorage whenever it changes
-  useEffect(() => {
-    if (review) {
-      saveReview(review);
+  const loadBranches = async () => {
+    const branchData = await fetchBranches();
+    if (branchData) {
+      setBranches(branchData.all);
     }
-  }, [review]);
+  };
+
+  // Save workspace whenever review changes
+  useEffect(() => {
+    if (currentWorkspace && currentWorktree) {
+      const updatedWorkspace: Workspace = {
+        ...currentWorkspace,
+        review: review,
+        branch: currentWorktree.branch,
+        lastAccessed: new Date().toISOString(),
+      };
+      saveWorkspace(updatedWorkspace);
+      setCurrentWorkspace(updatedWorkspace);
+    }
+  }, [review, currentWorktree]);
 
   const showToast = (message: string) => {
     setToast(message);
     setTimeout(() => setToast(null), 3000);
   };
 
-  const loadCurrentBranchDiff = async () => {
+  const loadCurrentBranchDiff = async (customBaseBranch?: string) => {
     setIsLoadingDiff(true);
     try {
       const [gitInfo, diffData] = await Promise.all([
         fetchGitInfo(),
-        fetchCurrentBranchDiff(),
+        fetchCurrentBranchDiff(customBaseBranch),
       ]);
 
       if (diffData) {
@@ -57,19 +106,22 @@ function App() {
           setSelectedFileIndex(0);
 
           // Update review with git info
-          if (!review && gitInfo) {
+          if (gitInfo) {
+            const baseBranch = customBaseBranch || gitInfo.baseBranch;
             const newReview: Review = {
-              review_id: `review_${Date.now()}`,
-              created_at: new Date().toISOString(),
+              review_id: review?.review_id || `review_${Date.now()}`,
+              created_at: review?.created_at || new Date().toISOString(),
               repo: gitInfo.repo,
-              base_ref: gitInfo.baseBranch,
+              base_ref: baseBranch,
               head_ref: gitInfo.currentBranch,
-              comments: [],
+              base_commit: gitInfo.baseCommit,
+              head_commit: gitInfo.headCommit,
+              has_uncommitted_changes: gitInfo.hasUncommittedChanges,
+              comments: review?.comments || [],
             };
             setReview(newReview);
+            showToast(`✅ Loaded diff: ${gitInfo.currentBranch} ← ${baseBranch}`);
           }
-
-          showToast(`✅ Loaded diff: ${gitInfo?.currentBranch || 'current'} ← ${gitInfo?.baseBranch || 'base'}`);
         }
       }
     } catch (error) {
@@ -123,8 +175,6 @@ function App() {
       ...review,
       comments: [...review.comments, newComment],
     });
-
-    showToast('✅ Comment added');
   };
 
   const handleToggleResolved = (commentId: string) => {
@@ -145,8 +195,62 @@ function App() {
       ...review,
       comments: review.comments.filter(c => c.comment_id !== commentId),
     });
+  };
 
-    showToast('✅ Comment deleted');
+  const handleSelectBaseBranch = (branch: string) => {
+    const cleanBranch = branch.replace('origin/', '');
+    loadCurrentBranchDiff(cleanBranch);
+  };
+
+  const handleSelectWorktree = async (worktree: Worktree) => {
+    setIsLoadingDiff(true);
+    const success = await switchWorktree(worktree.path);
+
+    if (success) {
+      // Save current workspace before switching
+      if (currentWorkspace && currentWorktree) {
+        const updatedWorkspace: Workspace = {
+          ...currentWorkspace,
+          review: review,
+          lastAccessed: new Date().toISOString(),
+        };
+        saveWorkspace(updatedWorkspace);
+      }
+
+      // Load new workspace
+      const workspaceId = getWorkspaceId(worktree.path);
+      let workspace = loadWorkspace(worktree.path);
+
+      if (!workspace) {
+        workspace = {
+          id: workspaceId,
+          worktreePath: worktree.path,
+          branch: worktree.branch,
+          review: null,
+          lastAccessed: new Date().toISOString(),
+        };
+      }
+
+      setCurrentWorkspace(workspace);
+      setCurrentWorktree(worktree);
+      setCurrentWorkspaceId(workspaceId);
+
+      // Load workspace state
+      if (workspace.review) {
+        setReview(workspace.review);
+      } else {
+        setReview(null);
+      }
+
+      // Reload branches and diff for new worktree
+      await loadBranches();
+      await loadCurrentBranchDiff();
+
+      showToast(`✅ Switched to worktree: ${worktree.branch}`);
+    } else {
+      showToast('❌ Failed to switch worktree');
+    }
+    setIsLoadingDiff(false);
   };
 
   const handleExportJSON = () => {
@@ -180,11 +284,57 @@ function App() {
     <div className="h-screen flex flex-col">
       {/* Header */}
       <header className="bg-gray-800 text-white p-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">✅ vibechecker</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl font-bold">✅ vibechecker</h1>
+          {review?.repo && (
+            <span className="text-sm text-gray-400">
+              {review.repo.replace(/^.*[:/]([^/]+\/[^/]+?)(\.git)?$/, '$1')}
+            </span>
+          )}
+          {review && (
+            <div className="flex items-center gap-3 text-sm">
+              <button
+                onClick={() => setShowBaseBranchSelector(true)}
+                className="flex items-center gap-2 hover:bg-gray-700 px-2 py-1 rounded transition-colors"
+              >
+                <span className="text-gray-400">{review.base_ref || 'base'}</span>
+                {review.base_commit && (
+                  <code className="text-xs bg-gray-700 px-1.5 py-0.5 rounded text-gray-300">
+                    {review.base_commit.substring(0, 7)}
+                  </code>
+                )}
+                <span className="text-gray-500 text-xs">▼</span>
+              </button>
+              <span className="text-gray-400">←</span>
+              <div className="flex items-center gap-2 px-2 py-1">
+                <span className="font-semibold text-green-400">{review.head_ref || 'head'}</span>
+                {review.head_commit && (
+                  <code className="text-xs bg-gray-700 px-1.5 py-0.5 rounded text-gray-300">
+                    {review.head_commit.substring(0, 7)}
+                  </code>
+                )}
+                {review.has_uncommitted_changes && (
+                  <span className="text-xs bg-yellow-600 px-1.5 py-0.5 rounded text-white">
+                    +uncommitted
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="flex gap-2">
+          {worktrees.length > 1 && (
+            <button
+              onClick={() => setShowWorktreeSelector(true)}
+              className="px-3 py-1 bg-purple-600 rounded hover:bg-purple-700 text-sm"
+              title="Switch Worktree"
+            >
+              🌳 Worktree
+            </button>
+          )}
           <button
-            onClick={loadCurrentBranchDiff}
+            onClick={() => loadCurrentBranchDiff()}
             disabled={isLoadingDiff}
             className="px-3 py-1 bg-green-600 rounded hover:bg-green-700 text-sm disabled:bg-gray-500"
           >
@@ -224,6 +374,7 @@ function App() {
             />
             <DiffViewer
               file={selectedFile}
+              comments={review?.comments || []}
               onAddComment={handleAddComment}
             />
             <CommentPanel
@@ -240,6 +391,27 @@ function App() {
         <DiffInput
           onSubmit={handleLoadDiff}
           onClose={() => setShowDiffInput(false)}
+        />
+      )}
+
+      {/* Branch Selector Modals */}
+      {showBaseBranchSelector && (
+        <BranchSelector
+          currentBranch={review?.base_ref || ''}
+          branches={branches}
+          onSelect={handleSelectBaseBranch}
+          onClose={() => setShowBaseBranchSelector(false)}
+          label="Select Base Branch"
+        />
+      )}
+
+      {/* Worktree Selector Modal */}
+      {showWorktreeSelector && currentWorktree && (
+        <WorktreeSelector
+          worktrees={worktrees}
+          currentWorktree={currentWorktree}
+          onSelect={handleSelectWorktree}
+          onClose={() => setShowWorktreeSelector(false)}
         />
       )}
 

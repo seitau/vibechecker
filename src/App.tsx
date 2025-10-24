@@ -180,7 +180,7 @@ function App() {
     <div className="h-screen flex flex-col">
       {/* Header */}
       <header className="bg-gray-800 text-white p-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">🧩 vibecheck</h1>
+        <h1 className="text-xl font-bold">✅ vibechecker</h1>
 
         <div className="flex gap-2">
           <button
@@ -204,8 +204,8 @@ function App() {
         {files.length === 0 ? (
           <div className="flex-1 flex items-center justify-center text-gray-500">
             <div className="text-center">
-              <div className="text-6xl mb-4">🧩</div>
-              <h2 className="text-2xl font-semibold mb-2">Welcome to vibecheck</h2>
+              <div className="text-6xl mb-4">✅</div>
+              <h2 className="text-2xl font-semibold mb-2">Welcome to vibechecker</h2>
               <p className="mb-4">Local code review made simple</p>
               <button
                 onClick={() => setShowDiffInput(true)}

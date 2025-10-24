@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="checkmark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Board background -->
+  <rect width="100" height="100" rx="20" fill="url(#bg)"/>
+
+  <!-- Kanban columns (subtle) -->
+  <rect x="10" y="15" width="22" height="70" rx="4" fill="#ffffff" opacity="0.15"/>
+  <rect x="39" y="15" width="22" height="70" rx="4" fill="#ffffff" opacity="0.15"/>
+  <rect x="68" y="15" width="22" height="70" rx="4" fill="#ffffff" opacity="0.15"/>
+
+  <!-- Cards -->
+  <rect x="13" y="20" width="16" height="8" rx="2" fill="#ffffff" opacity="0.9"/>
+  <rect x="13" y="32" width="16" height="8" rx="2" fill="#ffffff" opacity="0.9"/>
+
+  <rect x="42" y="20" width="16" height="8" rx="2" fill="#ffffff" opacity="0.9"/>
+  <rect x="42" y="32" width="16" height="8" rx="2" fill="#ffffff" opacity="0.9"/>
+
+  <rect x="71" y="20" width="16" height="8" rx="2" fill="#ffffff" opacity="0.9"/>
+
+  <!-- Big checkmark (vibe check!) -->
+  <path d="M 35 55 L 45 68 L 68 45"
+        stroke="url(#checkmark)"
+        stroke-width="8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        fill="none"
+        opacity="0.95"/>
+
+  <!-- Emoji-style sparkles -->
+  <circle cx="25" cy="50" r="2.5" fill="#fbbf24" opacity="0.8"/>
+  <circle cx="78" cy="58" r="2" fill="#fbbf24" opacity="0.8"/>
+  <circle cx="30" cy="75" r="1.5" fill="#fbbf24" opacity="0.8"/>
+</svg>

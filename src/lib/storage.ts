@@ -1,6 +1,6 @@
 import type { Review } from "../types/model";
 
-const STORAGE_KEY = 'vibecheck_review';
+const STORAGE_KEY = 'vibechecker_review';
 
 export function loadReview(): Review | null {
   try {

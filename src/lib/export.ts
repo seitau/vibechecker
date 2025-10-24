@@ -6,7 +6,7 @@ export function exportJSON(review: Review): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `vibecheck-review-${review.review_id}.json`;
+  a.download = `vibechecker-review-${review.review_id}.json`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -22,7 +22,7 @@ export function exportMarkdown(review: Review, files: ParsedFile[]): string {
     commentsByFile.set(comment.file_path, fileComments);
   });
 
-  let markdown = `# 🧩 Review Export — vibecheck
+  let markdown = `# ✅ Review Export — vibechecker
 
 **Repository:** \`${repo}\`
 **Base:** \`${base_ref}\`

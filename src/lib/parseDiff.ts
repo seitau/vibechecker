@@ -1,5 +1,5 @@
 import parseDiff from 'parse-diff';
-import type { ParsedFile, Chunk } from '../types/review';
+import type { ParsedFile, Chunk } from "../types/model";
 
 export function parseGitDiff(diffText: string): ParsedFile[] {
   const parsed = parseDiff(diffText);

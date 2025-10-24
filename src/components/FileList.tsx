@@ -1,4 +1,4 @@
-import type { ParsedFile } from '../types/review';
+import type { ParsedFile } from "../types/model";
 
 type Props = {
   files: ParsedFile[];

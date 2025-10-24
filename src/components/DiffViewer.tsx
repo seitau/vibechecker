@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { ParsedFile, Comment } from '../types/review';
+import type { ParsedFile, Comment } from "../types/model";
 import { generateHunkId } from '../lib/hunkId';
 
 type Props = {
@@ -12,6 +12,7 @@ export default function DiffViewer({ file, onAddComment }: Props) {
     hunkId: string;
     lineNumber?: number;
     isOld: boolean;
+    lineContent?: string;
   } | null>(null);
   const [commentText, setCommentText] = useState('');
 
@@ -23,8 +24,8 @@ export default function DiffViewer({ file, onAddComment }: Props) {
     );
   }
 
-  const handleAddCommentClick = (hunkId: string, lineNumber: number | undefined, isOld: boolean) => {
-    setCommentingLine({ hunkId, lineNumber, isOld });
+  const handleAddCommentClick = (hunkId: string, lineNumber: number | undefined, isOld: boolean, lineContent: string) => {
+    setCommentingLine({ hunkId, lineNumber, isOld, lineContent });
     setCommentText('');
   };
 
@@ -36,11 +37,19 @@ export default function DiffViewer({ file, onAddComment }: Props) {
       hunk_id: commentingLine.hunkId,
       start_line_new: commentingLine.isOld ? undefined : commentingLine.lineNumber,
       start_line_old: commentingLine.isOld ? commentingLine.lineNumber : undefined,
+      line_content: commentingLine.lineContent,
       comment: commentText.trim(),
     });
 
     setCommentingLine(null);
     setCommentText('');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      handleSubmitComment();
+    }
   };
 
   const fileName = file.to || file.from || 'unknown';
@@ -81,7 +90,16 @@ export default function DiffViewer({ file, onAddComment }: Props) {
                                         commentingLine?.lineNumber === (change.newLine || change.oldLine);
 
                     return (
-                      <tr key={changeIdx} className={bgColor}>
+                      <tr
+                        key={changeIdx}
+                        className={`${bgColor} hover:bg-blue-100 cursor-pointer group`}
+                        onClick={() => handleAddCommentClick(
+                          hunkId,
+                          change.newLine || change.oldLine,
+                          change.type === 'del',
+                          change.content
+                        )}
+                      >
                         <td className={`px-2 py-0.5 text-right select-none w-12 ${lineColor}`}>
                           {change.oldLine || ''}
                         </td>
@@ -89,17 +107,7 @@ export default function DiffViewer({ file, onAddComment }: Props) {
                           {change.newLine || ''}
                         </td>
                         <td className="px-2 py-0.5 w-8">
-                          <button
-                            onClick={() => handleAddCommentClick(
-                              hunkId,
-                              change.newLine || change.oldLine,
-                              change.type === 'del'
-                            )}
-                            className="text-gray-400 hover:text-blue-600"
-                            title="Add comment"
-                          >
-                            💬
-                          </button>
+                          <span className="invisible group-hover:visible text-gray-400">💬</span>
                         </td>
                         <td className="px-2 py-0.5 whitespace-pre-wrap break-all">
                           <span className={change.type === 'add' ? 'text-green-700' : change.type === 'del' ? 'text-red-700' : ''}>
@@ -117,9 +125,10 @@ export default function DiffViewer({ file, onAddComment }: Props) {
                   <textarea
                     className="w-full p-2 border border-gray-300 rounded text-sm font-sans"
                     rows={3}
-                    placeholder="Write a comment..."
+                    placeholder="Write a comment... (⌘+Enter to submit)"
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
+                    onKeyDown={handleKeyDown}
                     autoFocus
                   />
                   <div className="mt-2 flex gap-2">

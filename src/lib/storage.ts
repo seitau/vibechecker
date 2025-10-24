@@ -1,4 +1,4 @@
-import type { Review } from '../types/review';
+import type { Review } from "../types/model";
 
 const STORAGE_KEY = 'vibecheck_review';
 

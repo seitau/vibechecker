@@ -1,4 +1,4 @@
-import type { Comment } from '../types/review';
+import type { Comment } from "../types/model";
 
 type Props = {
   comments: Comment[];
@@ -40,6 +40,14 @@ export default function CommentPanel({ comments, onToggleResolved, onDeleteComme
               <div className="text-xs text-gray-500 mb-2">
                 Line: {comment.start_line_new || comment.start_line_old || 'N/A'}
               </div>
+
+              {comment.line_content && (
+                <div className="mb-2 p-2 bg-gray-100 rounded border border-gray-300">
+                  <div className="text-xs font-mono text-gray-700 whitespace-pre-wrap break-all">
+                    {comment.line_content}
+                  </div>
+                </div>
+              )}
 
               <div className="text-sm mb-2 whitespace-pre-wrap break-words">
                 {comment.comment}

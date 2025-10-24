@@ -1,4 +1,4 @@
-import type { Review, ParsedFile } from '../types/review';
+import type { Review, ParsedFile } from "../types/model";
 
 export function exportJSON(review: Review): void {
   const json = JSON.stringify(review, null, 2);

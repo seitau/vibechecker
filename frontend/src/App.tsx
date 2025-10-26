@@ -64,9 +64,14 @@ function App() {
 
       setCurrentWorkspaceId(workspaceId);
 
-      // Load branches and diff after workspace is set
+      // Load branches
       await loadBranches();
-      await loadCurrentBranchDiff();
+
+      // Only reload diff if we don't have a saved review with files
+      // This preserves comments on initial load
+      if (!workspace.review?.files || workspace.review.files.length === 0) {
+        await loadCurrentBranchDiff();
+      }
     }
   };
 
@@ -106,7 +111,7 @@ function App() {
       saveWorkspace(updatedWorkspace);
       setCurrentWorkspace(updatedWorkspace);
     }
-  }, [review?.comments, review?.review_id, currentWorktree?.path, files]);
+  }, [review, files, currentWorktree?.path]); // Simplified dependencies - track entire review object
 
   const showToast = (message: string) => {
     setToast(message);
@@ -124,6 +129,9 @@ function App() {
       if (diffResponse) {
         // Update review state regardless of whether there are changes
         if (gitInfo) {
+          // Preserve existing comments when updating review
+          const existingComments = review?.comments || [];
+
           const newReview: Review = {
             review_id: review?.review_id || `review_${Date.now()}`,
             created_at: review?.created_at || new Date().toISOString(),
@@ -133,7 +141,7 @@ function App() {
             base_commit: diffResponse.baseCommit,
             head_commit: diffResponse.headCommit,
             has_uncommitted_changes: customTargetBranch ? false : gitInfo.hasUncommittedChanges,
-            comments: review?.comments || [],
+            comments: existingComments, // Always preserve existing comments
           };
           setReview(newReview);
         }

@@ -265,10 +265,13 @@ app.get('/api/git/diff', (req: Request, res: Response) => {
 
   debug('Comparing:', { baseRef, targetRef });
   const committedDiff = gitCommand(`git diff ${baseRef}...${targetRef}`);
-  const uncommittedDiff = includeUncommitted ? gitCommand('git diff HEAD') : null;
 
-  // Combine both diffs
-  const diff = [committedDiff, uncommittedDiff].filter(Boolean).join('\n');
+  // Get both staged and unstaged changes if including uncommitted
+  const stagedDiff = includeUncommitted ? gitCommand('git diff --cached') : null;
+  const unstagedDiff = includeUncommitted ? gitCommand('git diff') : null;
+
+  // Combine all diffs
+  const diff = [committedDiff, stagedDiff, unstagedDiff].filter(Boolean).join('\n');
 
   if (!diff) {
     debug('No changes found');

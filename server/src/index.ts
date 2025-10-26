@@ -8,6 +8,11 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = 3001;
+const FRONTEND_PORT = 5173;
+
+// Serve static frontend files
+const frontendPath = path.resolve(__dirname, '../../frontend/dist');
+app.use(express.static(frontendPath));
 
 // Get the git repository root directory (project root, not server directory)
 const GIT_ROOT = path.resolve(__dirname, '..', '..');
@@ -219,7 +224,12 @@ app.get('/api/git/diff', (req: Request, res: Response) => {
   });
 });
 
+// Serve frontend for all other routes (SPA fallback)
+app.get('*', (_req: Request, res: Response) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
+});
+
 app.listen(PORT, () => {
-  console.log(`Git API server running on http://localhost:${PORT}`);
+  console.log(`vibechecker running on http://localhost:${PORT}`);
   console.log(`Working directory: ${process.cwd()}`);
 });

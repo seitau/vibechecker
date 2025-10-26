@@ -1,6 +1,6 @@
 {
   "name": "@seitau/vibechecker",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "Local code review made simple - review diffs with inline comments",
   "author": "seitau",
@@ -10,9 +10,9 @@
   },
   "files": [
     "bin",
-    "frontend",
-    "server",
-    "shared"
+    "frontend/dist",
+    "server/dist",
+    "server/package.json"
   ],
   "keywords": [
     "code-review",
@@ -36,10 +36,12 @@
     "server:dev": "npm run dev --workspace=@vibechecker/server",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspace=@vibechecker/frontend",
-    "prepare": "npm run build",
-    "postinstall": "npm install --workspaces --if-present"
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
     "concurrently": "^8.2.2"
   }
 }

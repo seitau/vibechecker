@@ -204,7 +204,12 @@ app.get('/api/git/diff', (req: Request, res: Response) => {
   const diff = [committedDiff, uncommittedDiff].filter(Boolean).join('\n');
 
   if (!diff) {
-    return res.status(500).json({ error: 'No changes found' });
+    return res.status(200).json({
+      diff: '',
+      base: baseBranch,
+      head: currentBranch.trim(),
+      message: 'No changes found'
+    });
   }
 
   res.json({

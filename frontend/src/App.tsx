@@ -54,14 +54,19 @@ function App() {
       setCurrentWorkspace(workspace);
       if (workspace.review) {
         setReview(workspace.review);
+        // Restore files from stored review if available
+        if (workspace.review.files && workspace.review.files.length > 0) {
+          setFiles(workspace.review.files);
+          setSelectedFileIndex(0);
+        }
       }
 
       setCurrentWorkspaceId(workspaceId);
-    }
 
-    // Load branches and diff
-    loadBranches();
-    loadCurrentBranchDiff();
+      // Load branches and diff after workspace is set
+      await loadBranches();
+      await loadCurrentBranchDiff();
+    }
   };
 
   const loadBranches = async () => {
@@ -71,19 +76,22 @@ function App() {
     }
   };
 
-  // Save workspace whenever review changes
+  // Save workspace whenever review or files change
   useEffect(() => {
-    if (currentWorkspace && currentWorktree) {
+    if (currentWorkspace && currentWorktree && review) {
       const updatedWorkspace: Workspace = {
         ...currentWorkspace,
-        review: review,
+        review: {
+          ...review,
+          files: files, // Store parsed files for reload
+        },
         branch: currentWorktree.branch,
         lastAccessed: new Date().toISOString(),
       };
       saveWorkspace(updatedWorkspace);
       setCurrentWorkspace(updatedWorkspace);
     }
-  }, [review, currentWorktree]);
+  }, [review?.comments, review?.review_id, currentWorktree?.path, files]);
 
   const showToast = (message: string) => {
     setToast(message);

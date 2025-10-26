@@ -23,4 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 
+# Claude settings
+.claude/settings.local.json
+
 .playwright-mcp/

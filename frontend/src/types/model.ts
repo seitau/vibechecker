@@ -21,6 +21,8 @@ export type Review = {
   has_uncommitted_changes?: boolean;
   created_at: string;
   comments: Comment[];
+  diff_text?: string; // Store raw diff for reload
+  files?: ParsedFile[]; // Store parsed files for reload
 }
 
 export type ParsedFile = {

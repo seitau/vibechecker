@@ -16,13 +16,13 @@ Local code review made simple - review diffs with inline comments.
 ## Installation
 
 ```bash
-npx vibechecker
+npx @seitau/vibechecker
 ```
 
 Or install globally:
 
 ```bash
-npm install -g vibechecker
+npm install -g @seitau/vibechecker
 vibechecker
 ```
 
@@ -30,7 +30,7 @@ vibechecker
 
 1. **Start vibechecker**:
    ```bash
-   npx vibechecker
+   npx @seitau/vibechecker
    ```
 
 2. The tool will automatically:

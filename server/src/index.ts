@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.VIBECHECKER_PORT ? parseInt(process.env.VIBECHECKER_PORT, 10) : 3001;
 const FRONTEND_PORT = 5173;
 
 // Debug mode

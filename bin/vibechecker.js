@@ -13,10 +13,23 @@ const serverPath = join(rootDir, 'server/dist/index.js');
 const args = process.argv.slice(2);
 const isDebug = args.includes('--debug') || args.includes('-d');
 
+// Parse port option
+let port = 3001; // default port
+const portIndex = args.findIndex(arg => arg === '-p' || arg === '--port');
+if (portIndex !== -1 && args[portIndex + 1]) {
+  const parsedPort = parseInt(args[portIndex + 1], 10);
+  if (!isNaN(parsedPort) && parsedPort > 0 && parsedPort < 65536) {
+    port = parsedPort;
+  } else {
+    console.error('❌ Invalid port number. Using default port 3001');
+  }
+}
+
 if (isDebug) {
   console.log('[DEBUG] vibechecker starting in debug mode');
   console.log('[DEBUG] Working directory:', process.cwd());
   console.log('[DEBUG] Server path:', serverPath);
+  console.log('[DEBUG] Port:', port);
 }
 
 console.log('\n╔══════════════════════════════════════════╗');
@@ -30,7 +43,8 @@ const server = spawn('node', [serverPath], {
   env: {
     ...process.env,
     VIBECHECKER_WORKDIR: process.cwd(), // Pass working directory to server
-    VIBECHECKER_DEBUG: isDebug ? '1' : '0' // Pass debug flag to server
+    VIBECHECKER_DEBUG: isDebug ? '1' : '0', // Pass debug flag to server
+    VIBECHECKER_PORT: port.toString() // Pass port to server
   }
 });
 
@@ -39,10 +53,13 @@ server.stdout.on('data', (data) => {
   process.stdout.write(data);
 
   if (output.includes('vibechecker running')) {
+    const urlLine = `  👉  Open: http://localhost:${port}`;
+    const padding = ' '.repeat(Math.max(0, 44 - urlLine.length));
+
     console.log('\n╔══════════════════════════════════════════╗');
     console.log('║              🎉  Ready!                  ║');
     console.log('║                                          ║');
-    console.log('║  👉  Open: http://localhost:3001         ║');
+    console.log(`║${urlLine}${padding}║`);
     console.log('║                                          ║');
     console.log('║  Press Ctrl+C to stop                    ║');
     console.log('╚══════════════════════════════════════════╝\n');

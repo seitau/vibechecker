@@ -9,12 +9,15 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3001;
 
+// Get the git repository root directory (project root, not server directory)
+const GIT_ROOT = path.resolve(__dirname, '..', '..');
+
 // Helper to execute git commands
 function gitCommand(cmd: string, suppressError: boolean = false): string | null {
   try {
     return execSync(cmd, {
       encoding: 'utf-8',
-      cwd: process.cwd(),
+      cwd: GIT_ROOT, // Use project root instead of server directory
       maxBuffer: 10 * 1024 * 1024, // 10MB buffer for large diffs
       stdio: suppressError ? ['pipe', 'pipe', 'ignore'] : 'pipe',
     });

@@ -129,6 +129,10 @@ function App() {
             setReview(newReview);
             showToast(`✅ Loaded diff: ${gitInfo.currentBranch} ← ${baseBranch}`);
           }
+        } else {
+          // No changes found - show message
+          showToast('ℹ️ No changes found');
+          setFiles([]);
         }
       }
     } catch (error) {

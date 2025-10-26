@@ -29,22 +29,24 @@ export function exportMarkdown(review: Review, files: ParsedFile[]): string {
     markdown += `## ${filePath}\n\n`;
 
     fileComments.forEach(comment => {
+      // Add line number info
+      const lineInfo = comment.start_line_new
+        ? `Line ${comment.start_line_new}`
+        : comment.start_line_old
+        ? `Line ${comment.start_line_old} (old)`
+        : '';
+
+      if (lineInfo) {
+        markdown += `**${lineInfo}**\n\n`;
+      }
+
       // Find the corresponding file and hunk
       const file = files.find(f => (f.to || f.from) === filePath);
       let diffContext = '';
 
-      if (file) {
-        const chunk = file.chunks.find(c => {
-          // Find chunk containing the comment line
-          const lineNum = comment.start_line_new || comment.start_line_old;
-          if (!lineNum) return false;
-
-          if (comment.start_line_new) {
-            return c.changes.some(ch => ch.newLine === lineNum);
-          } else {
-            return c.changes.some(ch => ch.oldLine === lineNum);
-          }
-        });
+      if (file && comment.hunk_id) {
+        // Try to find the chunk by hunk_id first (more reliable)
+        const chunk = file.chunks.find((c, idx) => `hunk_${idx}` === comment.hunk_id);
 
         if (chunk) {
           // Extract context around the comment (max 5 lines)
@@ -60,6 +62,11 @@ export function exportMarkdown(review: Review, files: ParsedFile[]): string {
             diffContext = contextLines.map(ch => ch.content).join('\n');
           }
         }
+      }
+
+      // Fallback to stored line_content if chunk lookup failed
+      if (!diffContext && comment.line_content) {
+        diffContext = comment.line_content;
       }
 
       markdown += `\`\`\`diff\n${diffContext || '(context not available)'}\n\`\`\`\n\n`;

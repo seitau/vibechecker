@@ -15,6 +15,7 @@ export default function FileList({ files, selectedFile, onSelectFile }: Props) {
       <div className="p-2">
         {files.map((file, index) => {
           const fileName = file.to || file.from || 'unknown';
+          const isRenamed = file.from && file.to && file.from !== file.to;
           const isSelected = index === selectedFile;
           return (
             <button
@@ -25,9 +26,16 @@ export default function FileList({ files, selectedFile, onSelectFile }: Props) {
                   ? 'bg-blue-100 border border-blue-300'
                   : 'hover:bg-gray-200'
               }`}
-              title={fileName}
+              title={isRenamed ? `${file.from} → ${file.to}` : fileName}
             >
-              <div className="font-mono text-xs truncate">{fileName}</div>
+              {isRenamed ? (
+                <div className="font-mono text-xs">
+                  <div className="text-gray-500 truncate">{file.from}</div>
+                  <div className="text-blue-600 truncate">→ {file.to}</div>
+                </div>
+              ) : (
+                <div className="font-mono text-xs truncate">{fileName}</div>
+              )}
               <div className="text-xs text-gray-600 mt-1">
                 <span className="text-green-600">+{file.additions}</span>
                 {' '}

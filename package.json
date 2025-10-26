@@ -36,9 +36,10 @@
     "server:dev": "npm run dev --workspace=@vibechecker/server",
     "build": "npm run build --workspaces",
     "test": "npm run test --workspace=@vibechecker/frontend",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "postinstall": "npm install --workspaces --if-present"
   },
-  "devDependencies": {
+  "dependencies": {
     "concurrently": "^8.2.2"
   }
 }

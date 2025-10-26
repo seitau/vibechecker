@@ -49,6 +49,10 @@ server.stdout.on('data', (data) => {
 
 server.stderr.on('data', (data) => {
   const output = data.toString();
+  // Show errors
+  if (output.includes('error') || output.includes('Error') || output.includes('ERR')) {
+    process.stderr.write(data);
+  }
   // Sometimes logs go to stderr
   if (output.includes('Git API server running')) {
     serverReady = true;
@@ -77,6 +81,10 @@ frontend.stdout.on('data', (data) => {
 
 frontend.stderr.on('data', (data) => {
   const output = data.toString();
+  // Show errors
+  if (output.includes('error') || output.includes('Error') || output.includes('ERR')) {
+    process.stderr.write(data);
+  }
   // Sometimes Vite output goes to stderr
   const localMatch = output.match(/Local:\s+(http:\/\/localhost:\d+)/);
   if (localMatch) {
@@ -100,14 +108,24 @@ process.on('SIGTERM', cleanup);
 
 server.on('exit', (code) => {
   if (code !== 0) {
-    console.error('Server process exited with code', code);
+    console.error(`\n❌ Server process failed with exit code ${code}`);
+    console.error('   This usually means npm dependencies are not installed.');
+    console.error('   Try running: npm install\n');
   }
   frontend.kill();
+  if (code !== 0) {
+    process.exit(code);
+  }
 });
 
 frontend.on('exit', (code) => {
   if (code !== 0) {
-    console.error('Frontend process exited with code', code);
+    console.error(`\n❌ Frontend process failed with exit code ${code}`);
+    console.error('   This usually means npm dependencies are not installed.');
+    console.error('   Try running: npm install\n');
   }
   server.kill();
+  if (code !== 0) {
+    process.exit(code);
+  }
 });

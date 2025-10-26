@@ -43,7 +43,7 @@ export default function BranchSelector({ currentBranch, branches, onSelect, onCl
 
   const handleSelect = (branch: string) => {
     onSelect(branch);
-    onClose();
+    // Don't close here - let parent handle it after processing
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

@@ -228,7 +228,8 @@ app.post('/api/git/worktree/switch', express.json(), (req: Request, res: Respons
 // API endpoint to get diff
 app.get('/api/git/diff', (req: Request, res: Response) => {
   const baseBranch = (req.query.base as string) || getDefaultBranch();
-  debug('GET /api/git/diff', { baseBranch });
+  const targetBranch = req.query.target as string;
+  debug('GET /api/git/diff', { baseBranch, targetBranch });
 
   const currentBranch = gitCommand('git branch --show-current');
 
@@ -237,10 +238,34 @@ app.get('/api/git/diff', (req: Request, res: Response) => {
     return res.status(500).json({ error: 'Not in a git repository' });
   }
 
-  // Get diff between base branch and current branch (committed + uncommitted changes)
-  // First get committed diff, then append uncommitted changes
-  const committedDiff = gitCommand(`git diff origin/${baseBranch}...HEAD`);
-  const uncommittedDiff = gitCommand('git diff HEAD');
+  const headRef = targetBranch || 'HEAD';
+  const includeUncommitted = !targetBranch; // Only include uncommitted if comparing with current HEAD
+
+  // Get diff between base branch and target/current branch
+  // Handle origin/ prefix for both base and target
+  let baseRef = baseBranch;
+  if (!baseRef.startsWith('origin/') && baseRef !== 'HEAD') {
+    // Check if origin/baseBranch exists
+    const hasOrigin = gitCommand(`git rev-parse --verify origin/${baseBranch}`, true);
+    if (hasOrigin) {
+      baseRef = `origin/${baseBranch}`;
+    }
+  }
+
+  let targetRef = headRef;
+  if (targetBranch && !targetBranch.startsWith('origin/') && targetBranch !== 'HEAD') {
+    // Check if origin/targetBranch exists
+    const hasOrigin = gitCommand(`git rev-parse --verify origin/${targetBranch}`, true);
+    if (hasOrigin) {
+      targetRef = `origin/${targetBranch}`;
+    } else {
+      targetRef = targetBranch;
+    }
+  }
+
+  debug('Comparing:', { baseRef, targetRef });
+  const committedDiff = gitCommand(`git diff ${baseRef}...${targetRef}`);
+  const uncommittedDiff = includeUncommitted ? gitCommand('git diff HEAD') : null;
 
   // Combine both diffs
   const diff = [committedDiff, uncommittedDiff].filter(Boolean).join('\n');
@@ -250,17 +275,27 @@ app.get('/api/git/diff', (req: Request, res: Response) => {
     return res.status(200).json({
       diff: '',
       base: baseBranch,
-      head: currentBranch.trim(),
+      head: targetBranch || currentBranch.trim(),
       message: 'No changes found'
     });
   }
 
   debug('Diff generated, length:', diff.length, 'bytes');
 
+  // Get commit info for base and target
+  const baseCommitFull = gitCommand(`git rev-parse ${baseRef}`);
+  const baseCommitShort = gitCommand(`git rev-parse --short ${baseRef}`);
+  const targetCommitFull = gitCommand(`git rev-parse ${targetRef}`);
+  const targetCommitShort = gitCommand(`git rev-parse --short ${targetRef}`);
+
   res.json({
     diff: diff,
     base: baseBranch,
-    head: currentBranch.trim(),
+    head: targetBranch || currentBranch.trim(),
+    baseCommit: baseCommitFull ? baseCommitFull.trim() : '',
+    baseCommitShort: baseCommitShort ? baseCommitShort.trim() : '',
+    headCommit: targetCommitFull ? targetCommitFull.trim() : '',
+    headCommitShort: targetCommitShort ? targetCommitShort.trim() : '',
   });
 });
 

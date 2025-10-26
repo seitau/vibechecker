@@ -2,16 +2,31 @@
  * Fetch git diff from the backend API
  * This assumes a simple HTTP server is running that can execute git commands
  */
-export async function fetchCurrentBranchDiff(baseBranch?: string): Promise<string | null> {
+export async function fetchCurrentBranchDiff(baseBranch?: string, targetBranch?: string): Promise<{
+  diff: string;
+  base: string;
+  head: string;
+  baseCommit: string;
+  baseCommitShort: string;
+  headCommit: string;
+  headCommitShort: string;
+} | null> {
   try {
-    const url = baseBranch ? `/api/git/diff?base=${encodeURIComponent(baseBranch)}` : '/api/git/diff';
+    const params = new URLSearchParams();
+    if (baseBranch) {
+      params.append('base', baseBranch);
+    }
+    if (targetBranch) {
+      params.append('target', targetBranch);
+    }
+    const url = params.toString() ? `/api/git/diff?${params.toString()}` : '/api/git/diff';
     const response = await fetch(url);
     if (!response.ok) {
       console.error('Failed to fetch diff:', response.statusText);
       return null;
     }
     const data = await response.json();
-    return data.diff || null;
+    return data;
   } catch (error) {
     console.error('Error fetching diff:', error);
     return null;

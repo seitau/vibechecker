@@ -20,6 +20,7 @@ function App() {
   const [isLoadingDiff, setIsLoadingDiff] = useState(false);
   const [branches, setBranches] = useState<string[]>([]);
   const [showBaseBranchSelector, setShowBaseBranchSelector] = useState(false);
+  const [showTargetBranchSelector, setShowTargetBranchSelector] = useState(false);
   const [worktrees, setWorktrees] = useState<Worktree[]>([]);
   const [currentWorktree, setCurrentWorktree] = useState<Worktree | null>(null);
   const [showWorktreeSelector, setShowWorktreeSelector] = useState(false);
@@ -72,7 +73,21 @@ function App() {
   const loadBranches = async () => {
     const branchData = await fetchBranches();
     if (branchData) {
-      setBranches(branchData.all);
+      // Show both local and remote branches
+      const allBranches = branchData.all
+        .filter(b => b !== 'origin' && b !== 'origin/HEAD') // Filter out unwanted entries
+        .sort((a, b) => {
+          // Sort: local branches first, then remote branches
+          const aIsRemote = a.startsWith('origin/');
+          const bIsRemote = b.startsWith('origin/');
+
+          if (aIsRemote !== bIsRemote) {
+            return aIsRemote ? 1 : -1; // Local first
+          }
+          return a.localeCompare(b);
+        });
+
+      setBranches(allBranches);
     }
   };
 
@@ -98,39 +113,44 @@ function App() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const loadCurrentBranchDiff = async (customBaseBranch?: string) => {
+  const loadCurrentBranchDiff = async (customBaseBranch?: string, customTargetBranch?: string) => {
     setIsLoadingDiff(true);
     try {
-      const [gitInfo, diffData] = await Promise.all([
+      const [gitInfo, diffResponse] = await Promise.all([
         fetchGitInfo(),
-        fetchCurrentBranchDiff(customBaseBranch),
+        fetchCurrentBranchDiff(customBaseBranch, customTargetBranch),
       ]);
 
-      if (diffData) {
-        const parsedFiles = parseGitDiff(diffData);
-        if (parsedFiles.length > 0) {
-          setFiles(parsedFiles);
-          setSelectedFileIndex(0);
+      if (diffResponse) {
+        // Update review state regardless of whether there are changes
+        if (gitInfo) {
+          const newReview: Review = {
+            review_id: review?.review_id || `review_${Date.now()}`,
+            created_at: review?.created_at || new Date().toISOString(),
+            repo: gitInfo.repo,
+            base_ref: diffResponse.base,
+            head_ref: diffResponse.head,
+            base_commit: diffResponse.baseCommit,
+            head_commit: diffResponse.headCommit,
+            has_uncommitted_changes: customTargetBranch ? false : gitInfo.hasUncommittedChanges,
+            comments: review?.comments || [],
+          };
+          setReview(newReview);
+        }
 
-          // Update review with git info
-          if (gitInfo) {
-            const baseBranch = customBaseBranch || gitInfo.baseBranch;
-            const newReview: Review = {
-              review_id: review?.review_id || `review_${Date.now()}`,
-              created_at: review?.created_at || new Date().toISOString(),
-              repo: gitInfo.repo,
-              base_ref: baseBranch,
-              head_ref: gitInfo.currentBranch,
-              base_commit: gitInfo.baseCommit,
-              head_commit: gitInfo.headCommit,
-              has_uncommitted_changes: gitInfo.hasUncommittedChanges,
-              comments: review?.comments || [],
-            };
-            setReview(newReview);
-            showToast(`✅ Loaded diff: ${gitInfo.currentBranch} ← ${baseBranch}`);
+        if (diffResponse.diff) {
+          const parsedFiles = parseGitDiff(diffResponse.diff);
+          if (parsedFiles.length > 0) {
+            setFiles(parsedFiles);
+            setSelectedFileIndex(0);
+            showToast(`✅ Loaded diff: ${diffResponse.head} ← ${diffResponse.base}`);
+          } else {
+            // No changes found - show message
+            showToast('ℹ️ No changes found');
+            setFiles([]);
           }
         } else {
-          // No changes found - show message
+          // No diff data
           showToast('ℹ️ No changes found');
           setFiles([]);
         }
@@ -208,9 +228,16 @@ function App() {
     });
   };
 
-  const handleSelectBaseBranch = (branch: string) => {
-    const cleanBranch = branch.replace('origin/', '');
-    loadCurrentBranchDiff(cleanBranch);
+  const handleSelectBaseBranch = async (branch: string) => {
+    setShowBaseBranchSelector(false);
+    const currentTarget = review?.head_ref;
+    await loadCurrentBranchDiff(branch, currentTarget);
+  };
+
+  const handleSelectTargetBranch = async (branch: string) => {
+    setShowTargetBranchSelector(false);
+    const currentBase = review?.base_ref;
+    await loadCurrentBranchDiff(currentBase, branch);
   };
 
   const handleSelectWorktree = async (worktree: Worktree) => {
@@ -317,7 +344,10 @@ function App() {
                 <span className="text-gray-500 text-xs">▼</span>
               </button>
               <span className="text-gray-400">←</span>
-              <div className="flex items-center gap-2 px-2 py-1">
+              <button
+                onClick={() => setShowTargetBranchSelector(true)}
+                className="flex items-center gap-2 hover:bg-gray-700 px-2 py-1 rounded transition-colors"
+              >
                 <span className="font-semibold text-green-400">{review.head_ref || 'head'}</span>
                 {review.head_commit && (
                   <code className="text-xs bg-gray-700 px-1.5 py-0.5 rounded text-gray-300">
@@ -329,7 +359,8 @@ function App() {
                     +uncommitted
                   </span>
                 )}
-              </div>
+                <span className="text-gray-500 text-xs">▼</span>
+              </button>
             </div>
           )}
         </div>
@@ -428,6 +459,16 @@ function App() {
           onSelect={handleSelectBaseBranch}
           onClose={() => setShowBaseBranchSelector(false)}
           label="Select Base Branch"
+        />
+      )}
+
+      {showTargetBranchSelector && (
+        <BranchSelector
+          currentBranch={review?.head_ref || ''}
+          branches={branches}
+          onSelect={handleSelectTargetBranch}
+          onClose={() => setShowTargetBranchSelector(false)}
+          label="Select Target Branch"
         />
       )}
 

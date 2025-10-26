@@ -14,8 +14,9 @@ const FRONTEND_PORT = 5173;
 const frontendPath = path.resolve(__dirname, '../../frontend/dist');
 app.use(express.static(frontendPath));
 
-// Get the git repository root directory (project root, not server directory)
-const GIT_ROOT = path.resolve(__dirname, '..', '..');
+// Get the git repository root directory
+// Use VIBECHECKER_WORKDIR if set (when running via npx), otherwise use server's parent directory
+const GIT_ROOT = process.env.VIBECHECKER_WORKDIR || path.resolve(__dirname, '..', '..');
 
 // Helper to execute git commands
 function gitCommand(cmd: string, suppressError: boolean = false): string | null {

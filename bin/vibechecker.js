@@ -16,7 +16,8 @@ console.log('╚═════════════════════�
 // Start server directly (no build step needed - we ship pre-built files)
 const server = spawn('node', [serverPath], {
   cwd: process.cwd(), // Use current working directory for git operations
-  stdio: ['inherit', 'pipe', 'pipe']
+  stdio: ['inherit', 'pipe', 'pipe'],
+  env: { ...process.env, VIBECHECKER_WORKDIR: process.cwd() } // Pass working directory to server
 });
 
 server.stdout.on('data', (data) => {

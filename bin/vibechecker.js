@@ -9,6 +9,16 @@ const __dirname = dirname(__filename);
 const rootDir = join(__dirname, '..');
 const serverPath = join(rootDir, 'server/dist/index.js');
 
+// Parse command line arguments
+const args = process.argv.slice(2);
+const isDebug = args.includes('--debug') || args.includes('-d');
+
+if (isDebug) {
+  console.log('[DEBUG] vibechecker starting in debug mode');
+  console.log('[DEBUG] Working directory:', process.cwd());
+  console.log('[DEBUG] Server path:', serverPath);
+}
+
 console.log('\n╔══════════════════════════════════════════╗');
 console.log('║    vibechecker is starting...            ║');
 console.log('╚══════════════════════════════════════════╝\n');
@@ -17,7 +27,11 @@ console.log('╚═════════════════════�
 const server = spawn('node', [serverPath], {
   cwd: process.cwd(), // Use current working directory for git operations
   stdio: ['inherit', 'pipe', 'pipe'],
-  env: { ...process.env, VIBECHECKER_WORKDIR: process.cwd() } // Pass working directory to server
+  env: {
+    ...process.env,
+    VIBECHECKER_WORKDIR: process.cwd(), // Pass working directory to server
+    VIBECHECKER_DEBUG: isDebug ? '1' : '0' // Pass debug flag to server
+  }
 });
 
 server.stdout.on('data', (data) => {

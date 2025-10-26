@@ -10,6 +10,16 @@ const app = express();
 const PORT = 3001;
 const FRONTEND_PORT = 5173;
 
+// Debug mode
+const DEBUG = process.env.VIBECHECKER_DEBUG === '1';
+
+// Debug logging helper
+function debug(...args: any[]) {
+  if (DEBUG) {
+    console.log('[DEBUG]', ...args);
+  }
+}
+
 // Serve static frontend files
 const frontendPath = path.resolve(__dirname, '../../frontend/dist');
 app.use(express.static(frontendPath));
@@ -18,19 +28,36 @@ app.use(express.static(frontendPath));
 // Use VIBECHECKER_WORKDIR if set (when running via npx), otherwise use server's parent directory
 const GIT_ROOT = process.env.VIBECHECKER_WORKDIR || path.resolve(__dirname, '..', '..');
 
+debug('Server configuration:', {
+  GIT_ROOT,
+  frontendPath,
+  PORT,
+  DEBUG,
+});
+
 // Helper to execute git commands
 function gitCommand(cmd: string, suppressError: boolean = false): string | null {
+  debug('Executing git command:', cmd, 'in directory:', GIT_ROOT);
+
   try {
-    return execSync(cmd, {
+    const result = execSync(cmd, {
       encoding: 'utf-8',
       cwd: GIT_ROOT, // Use project root instead of server directory
       maxBuffer: 10 * 1024 * 1024, // 10MB buffer for large diffs
       stdio: suppressError ? ['pipe', 'pipe', 'ignore'] : 'pipe',
     });
+
+    if (DEBUG && result) {
+      const preview = result.length > 200 ? result.substring(0, 200) + '...' : result;
+      debug('Git command result preview:', preview);
+    }
+
+    return result;
   } catch (error) {
     if (!suppressError) {
       console.error(`Git command failed: ${cmd}`, error instanceof Error ? error.message : String(error));
     }
+    debug('Git command error:', error);
     return null;
   }
 }
@@ -67,6 +94,8 @@ function getDefaultBranch(): string {
 
 // API endpoint to get git info
 app.get('/api/git/info', (req: Request, res: Response) => {
+  debug('GET /api/git/info');
+
   const currentBranch = gitCommand('git branch --show-current');
   const baseBranch = getDefaultBranch();
   const remoteUrl = gitCommand('git config --get remote.origin.url');
@@ -77,10 +106,11 @@ app.get('/api/git/info', (req: Request, res: Response) => {
   const hasUncommitted = gitCommand('git status --porcelain');
 
   if (!currentBranch) {
+    debug('Not in a git repository');
     return res.status(500).json({ error: 'Not in a git repository' });
   }
 
-  res.json({
+  const responseData = {
     currentBranch: currentBranch.trim(),
     baseBranch: baseBranch,
     repo: remoteUrl ? remoteUrl.trim() : 'local',
@@ -89,7 +119,10 @@ app.get('/api/git/info', (req: Request, res: Response) => {
     baseCommit: baseCommit ? baseCommit.trim() : '',
     baseCommitShort: baseCommitShort ? baseCommitShort.trim() : '',
     hasUncommittedChanges: hasUncommitted ? hasUncommitted.trim().length > 0 : false,
-  });
+  };
+
+  debug('Git info response:', responseData);
+  res.json(responseData);
 });
 
 // API endpoint to list branches
@@ -195,9 +228,12 @@ app.post('/api/git/worktree/switch', express.json(), (req: Request, res: Respons
 // API endpoint to get diff
 app.get('/api/git/diff', (req: Request, res: Response) => {
   const baseBranch = (req.query.base as string) || getDefaultBranch();
+  debug('GET /api/git/diff', { baseBranch });
+
   const currentBranch = gitCommand('git branch --show-current');
 
   if (!currentBranch) {
+    debug('Not in a git repository');
     return res.status(500).json({ error: 'Not in a git repository' });
   }
 
@@ -210,6 +246,7 @@ app.get('/api/git/diff', (req: Request, res: Response) => {
   const diff = [committedDiff, uncommittedDiff].filter(Boolean).join('\n');
 
   if (!diff) {
+    debug('No changes found');
     return res.status(200).json({
       diff: '',
       base: baseBranch,
@@ -217,6 +254,8 @@ app.get('/api/git/diff', (req: Request, res: Response) => {
       message: 'No changes found'
     });
   }
+
+  debug('Diff generated, length:', diff.length, 'bytes');
 
   res.json({
     diff: diff,

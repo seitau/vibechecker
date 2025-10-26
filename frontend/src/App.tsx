@@ -366,14 +366,29 @@ function App() {
           <div className="flex-1 flex items-center justify-center text-gray-500">
             <div className="text-center">
               <div className="text-6xl mb-4">✅</div>
-              <h2 className="text-2xl font-semibold mb-2">Welcome to vibechecker</h2>
-              <p className="mb-4">Local code review made simple</p>
-              <button
-                onClick={() => setShowDiffInput(true)}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Get Started - Paste a Diff
-              </button>
+              <h2 className="text-2xl font-semibold mb-2">
+                {review ? 'No changes found' : 'Welcome to vibechecker'}
+              </h2>
+              <p className="mb-4">
+                {review
+                  ? 'The current branch has no changes compared to the base branch'
+                  : 'Local code review made simple'}
+              </p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => loadCurrentBranchDiff()}
+                  disabled={isLoadingDiff}
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-500"
+                >
+                  {isLoadingDiff ? '⏳ Loading...' : '🔄 Reload Diff'}
+                </button>
+                <button
+                  onClick={() => setShowDiffInput(true)}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  📝 Paste a Diff
+                </button>
+              </div>
             </div>
           </div>
         ) : (

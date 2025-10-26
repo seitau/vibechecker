@@ -46,7 +46,7 @@ export function exportMarkdown(review: Review, files: ParsedFile[]): string {
 
       if (file && comment.hunk_id) {
         // Try to find the chunk by hunk_id first (more reliable)
-        const chunk = file.chunks.find((c, idx) => `hunk_${idx}` === comment.hunk_id);
+        const chunk = file.chunks.find((_c, idx) => `hunk_${idx}` === comment.hunk_id);
 
         if (chunk) {
           // Extract context around the comment (max 5 lines)

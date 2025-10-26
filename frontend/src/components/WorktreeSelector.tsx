@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import type { Worktree } from '../lib/git';
 
 type WorktreeSelectorProps = {

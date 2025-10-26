@@ -1,5 +1,5 @@
 import parseDiff from 'parse-diff';
-import type { ParsedFile, Chunk } from "../types/model";
+import type { ParsedFile } from "../types/model";
 
 export function parseGitDiff(diffText: string): ParsedFile[] {
   const parsed = parseDiff(diffText);
@@ -12,11 +12,11 @@ export function parseGitDiff(diffText: string): ParsedFile[] {
       changes: chunk.changes.map(change => ({
         type: change.type as 'normal' | 'add' | 'del',
         content: change.content,
-        oldLine: change.ln1,
-        newLine: change.ln2,
-        ln: change.ln,
-        ln1: change.ln1,
-        ln2: change.ln2,
+        oldLine: (change as any).ln1,
+        newLine: (change as any).ln2,
+        ln: (change as any).ln,
+        ln1: (change as any).ln1,
+        ln2: (change as any).ln2,
       })),
       oldStart: chunk.oldStart,
       oldLines: chunk.oldLines,

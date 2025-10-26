@@ -4,5 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "main": "./types/model.ts",
-  "types": "./types/model.ts"
+  "types": "./types/model.ts",
+  "scripts": {
+    "build": "echo 'No build needed for shared types'"
+  }
 }

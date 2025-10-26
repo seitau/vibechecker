@@ -1,8 +1,30 @@
 {
   "name": "vibechecker",
-  "private": true,
   "version": "0.1.0",
   "type": "module",
+  "description": "Local code review made simple - review diffs with inline comments",
+  "author": "seitau",
+  "license": "MIT",
+  "bin": {
+    "vibechecker": "./bin/vibechecker.js"
+  },
+  "files": [
+    "bin",
+    "frontend",
+    "server",
+    "shared"
+  ],
+  "keywords": [
+    "code-review",
+    "diff",
+    "git",
+    "review",
+    "comments"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/seitau/vibechecker.git"
+  },
   "workspaces": [
     "frontend",
     "server",
@@ -13,7 +35,8 @@
     "frontend:dev": "npm run dev --workspace=@vibechecker/frontend",
     "server:dev": "npm run dev --workspace=@vibechecker/server",
     "build": "npm run build --workspaces",
-    "test": "npm run test --workspace=@vibechecker/frontend"
+    "test": "npm run test --workspace=@vibechecker/frontend",
+    "prepare": "npm run build"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

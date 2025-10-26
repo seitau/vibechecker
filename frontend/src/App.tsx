@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Review, Comment, ParsedFile } from "../types/model";
+import type { Review, Comment, ParsedFile } from "./types/model";
 import { parseGitDiff } from './lib/parseDiff';
 import { exportJSON, exportMarkdown, copyToClipboard } from './lib/export';
 import { fetchCurrentBranchDiff, fetchGitInfo, fetchBranches, fetchWorktrees, switchWorktree, type Worktree } from './lib/git';
@@ -20,7 +20,6 @@ function App() {
   const [isLoadingDiff, setIsLoadingDiff] = useState(false);
   const [branches, setBranches] = useState<string[]>([]);
   const [showBaseBranchSelector, setShowBaseBranchSelector] = useState(false);
-  const [showHeadBranchSelector, setShowHeadBranchSelector] = useState(false);
   const [worktrees, setWorktrees] = useState<Worktree[]>([]);
   const [currentWorktree, setCurrentWorktree] = useState<Worktree | null>(null);
   const [showWorktreeSelector, setShowWorktreeSelector] = useState(false);
@@ -182,7 +181,7 @@ function App() {
 
     setReview({
       ...review,
-      comments: review.comments.map(c =>
+      comments: review.comments.map((c) =>
         c.comment_id === commentId ? { ...c, resolved: !c.resolved } : c
       ),
     });
@@ -193,7 +192,7 @@ function App() {
 
     setReview({
       ...review,
-      comments: review.comments.filter(c => c.comment_id !== commentId),
+      comments: review.comments.filter((c) => c.comment_id !== commentId),
     });
   };
 

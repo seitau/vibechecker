@@ -4,6 +4,8 @@ export type Comment = {
   hunk_id: string;
   start_line_new?: number;
   start_line_old?: number;
+  end_line_new?: number;
+  end_line_old?: number;
   line_content?: string;
   comment: string;
   tags?: string[];

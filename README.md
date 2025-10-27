@@ -41,7 +41,7 @@ vibechecker
 
 2. The tool will automatically:
    - Start a local server on port 3001
-   - Open your browser at http://localhost:5173
+   - Open your browser at http://localhost:3001
    - Load the diff from your current git branch
 
 3. **Review workflow**:

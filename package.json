@@ -1,6 +1,6 @@
 {
   "name": "@seitau/vibechecker",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "type": "module",
   "description": "Local code review made simple - review diffs with inline comments",
   "author": "seitau",

@@ -2,6 +2,8 @@
 
 Local code review made simple - review diffs with inline comments.
 
+![vibechecker UI](./images/vibechecker_ui.png)
+
 ## Features
 
 - 📝 **Interactive Diff Review**: Visual diff viewer with syntax highlighting

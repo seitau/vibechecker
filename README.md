@@ -1,8 +1,12 @@
+<div align="center">
+
 # ✅ vibechecker
 
-Local code review made simple - review diffs with inline comments.
+### Local code review made simple - review diffs with inline comments
 
 ![vibechecker UI](./images/vibechecker_ui.png)
+
+</div>
 
 ## Features
 
